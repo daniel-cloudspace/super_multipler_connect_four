@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+    <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>	
+    <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
+    <script type='text/javascript' src='https://raw.github.com/documentcloud/underscore/master/underscore-min.js'></script>
+    <script type='text/javascript' src='/lib/keys.js'></script>
+    <script type='text/javascript' src='/socket.io/socket.io.js'></script>
+    <script type='text/javascript'>
+      /**
+       * Basic Helper Functions
+       */
+      function get_surrounding_column_ids(column_id) { 
+        var start_id = parseInt(column_id)-4
+        for(var column_ids=[], i=0; i<8; i++) column_ids.push(start_id+i)
+
+        return column_ids
+      }
+
+      function column_html(column) {
+        for (var html='', i=7; i>=0; i--) {
+          html += "<div class='slot " + ( column[i] ? column[i] : '' ) + "'>" + ( column[i] ? column[i] : '' ) + "</div>"
+        }
+        return html
+      }
+      function draw_column(column_id, column) { 
+        $('#game .column#column_' + column_id).html(column_html(column)) 
+      }
+      function columns_html(columns) {
+        var html = ''
+        for (var id in columns) {
+          html += "<div class='column' id='column_" + id + "'>" + column_html(columns[id]) + "</div>"
+        }
+        return html
+      }
+      function draw_columns(columns) {
+        $('#game').html(columns_html(columns))
+      }
+
+
+      /**
+       * Initialize
+       */
+      var board, my_id, me
+      var columns = {}
+      window.addEventListener('load', function() {
+        var socket = new io.connect()
+
+        socket.on('disconnect', function(){ })
+
+        socket.on('init_data', function(init_data) {
+          // set user params
+          my_id = init_data.my_id
+          me = init_data.user
+
+          // get the user an initial set of columns
+          socket.on('get_columns', function(data) {
+            for ( var i in data ) columns[i] = data[i]
+            draw_columns(columns)
+
+            $('#game .column').click(function() {
+              var column_id = parseInt(this.id.split('_')[1])
+              console.log('clicking column ', column_id)
+              socket.emit('choose_column', column_id)
+            })
+          })
+          socket.emit('get_columns', get_surrounding_column_ids(me.column_center))
+
+          socket.on('column_change', function(data) {
+            draw_column(data.column_id, data.column_data)
+          })
+        })
+      })
+    </script>
+<style type="text/css">
+  .board { width: 600px; border: 1px solid black; }
+  .slot { width: 65px; height: 65px; border: 1px solid black; float: left; text-align:center; line-height:65px; font-size:18px; font-weight:bold; }
+  .column { float: left; height: 540px; width: 68px; }
+  .column:hover { background: #eee; }
+  .taken {}
+  .red { box-shadow: inset 0 0 10px #f00; background-color: #fdd; }
+  .blue { box-shadow: inset 0 0 10px #00f; background-color: #ddf; }
+</style>
+</head>
+<body>
+<div id="game"></div>
+</body>
+</html>
