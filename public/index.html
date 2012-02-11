@@ -43,11 +43,14 @@
         $('#game').html(columns_html(columns))
       }
 
+      function user_html(user_id, user) {
+        return"<div id='user_" + user_id + "' class='" + user.color + "_player_score'><span class='user_id'>" + user_id + "</span>: " + user.points + "</div>"
+      }
 
       /**
        * Initialize
        */
-      var board, my_id, me
+      var board, my_id, me, users
       var columns = {}
       window.addEventListener('load', function() {
         var socket = new io.connect()
@@ -58,6 +61,7 @@
           // set user params
           my_id = init_data.my_id
           me = init_data.user
+          users = init_data.users
 
           // get the user an initial set of columns
           socket.on('get_columns', function(data) {
@@ -66,7 +70,6 @@
 
             $('#game .column').click(function() {
               var column_id = parseInt(this.id.split('_')[1])
-              console.log('clicking column ', column_id)
               socket.emit('choose_column', column_id)
             })
           })
@@ -76,9 +79,8 @@
             draw_column(data.column_id, data.column_data)
           })
           
+          socket.on('points')
         })
-
-
 
       })
     </script>
@@ -90,6 +92,9 @@
   .taken {}
   .red { box-shadow: inset 0 0 10px #f00; background-color: #faa; }
   .blue { box-shadow: inset 0 0 10px #00f; background-color: #aaf; }
+  .red_player_score { background-color: #fdd; border-color: #ddd; width: 100px; float: left; }
+  .red_player_score { background-color: #ddf; border-color: #ddd; width: 100px; float: left; }
+  .red_player_score .user_id { color:gray; }
   #game {  }
 
 
@@ -107,5 +112,7 @@ user-select: none;
 <body>
 
 <div id="game"></div>
+<div id="score_box"></div>
+
 </body>
 </html>
