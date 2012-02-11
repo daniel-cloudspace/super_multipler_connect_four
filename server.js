@@ -20,7 +20,8 @@ function create_user() {
   current_color = current_color == 'blue' ? 'red' : 'blue'
   return { 
     column_center: 5,
-    color: current_color
+    color: current_color,
+    score: 0
   }
 }
 
@@ -33,11 +34,14 @@ io.sockets.on('connection', function(socket) {
 
   socket.emit('init_data', { 
       my_id: socket.id,
-      user: me
+      user: me,
+      users: users
   })
 
   function add_to_column(column_id, color, callback) {
     get_column(column_id, function(column) {
+      if (column.length == 8) return // keep column sizes at 8, for now
+
       column.push(me.color)
       client.set(column_id, JSON.stringify(column), function(err, resp) {
         console.log("updated column ", column_id, " to ", column)
@@ -48,6 +52,10 @@ io.sockets.on('connection', function(socket) {
         get_columns(column_ids, function(columns) {
           if (connect_four(columns)) { 
             console.log("CONNECT FOUR!!!")
+
+            var points_lost = 0
+            for (var i in columns) for (var j=0; j<columns[i].length; j++) if(columns[i][j] == me.color) points_lost++
+
             for (var i=0; i<column_ids.length; i++) {
               client.set(column_ids[i], "[]")
              
@@ -55,8 +63,15 @@ io.sockets.on('connection', function(socket) {
                 column_id: column_ids[i], 
                 column_data: []
               })
+
+              me.score -= points_lost
+              io.sockets.emit('points_change', {
+                player_id: my_id,
+                points: me.points
+              })
             }
           } else {
+            me.score++
             callback(column_id, column)
           }
         })
@@ -145,8 +160,6 @@ io.sockets.on('connection', function(socket) {
   // when a client chooses a column to drop their piece into
   socket.on('choose_column', function(column_id) {
     add_to_column(column_id, me.color, notify_players)
-    
-      
   })
 
   socket.on('get_column', function(column_id) {
