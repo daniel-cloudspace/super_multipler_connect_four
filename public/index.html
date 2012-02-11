@@ -2,11 +2,17 @@
 <html>
 <head>
     <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>	
-    <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type='text/javascript' src='https://raw.github.com/documentcloud/underscore/master/underscore-min.js'></script>
     <script type='text/javascript' src='/lib/keys.js'></script>
     <script type='text/javascript' src='/socket.io/socket.io.js'></script>
     <script type='text/javascript'>
+      /**
+       * Google jsapi loaders
+       */
+      google.load("jquery", "1.7.1");
+      google.load("jqueryui", "1.8.16");
+
       /**
        * Basic Helper Functions
        */
@@ -18,19 +24,19 @@
       }
 
       function column_html(column) {
-        for (var html='', i=7; i>=0; i--) {
+        for (var html='', i=7; i>=0; i--) 
           html += "<div class='slot " + ( column[i] ? column[i] : '' ) + "'>" + ( column[i] ? column[i] : '' ) + "</div>"
-        }
         return html
       }
-      function draw_column(column_id, column) { 
-        $('#game .column#column_' + column_id).html(column_html(column)) 
+      function draw_column(column_id, column_data) { 
+        var column = $('#game .column#column_' + column_id)
+        column.html(column_html(column_data)) 
+        column.css('background-color','#ff5').animate({'background-color': 'white'})
       }
       function columns_html(columns) {
         var html = ''
-        for (var id in columns) {
+        for (var id in columns) 
           html += "<div class='column' id='column_" + id + "'>" + column_html(columns[id]) + "</div>"
-        }
         return html
       }
       function draw_columns(columns) {
@@ -69,7 +75,11 @@
           socket.on('column_change', function(data) {
             draw_column(data.column_id, data.column_data)
           })
+          
         })
+
+
+
       })
     </script>
 <style type="text/css">
@@ -80,9 +90,11 @@
   .taken {}
   .red { box-shadow: inset 0 0 10px #f00; background-color: #fdd; }
   .blue { box-shadow: inset 0 0 10px #00f; background-color: #ddf; }
+  #game {  }
 </style>
 </head>
 <body>
+
 <div id="game"></div>
 </body>
 </html>

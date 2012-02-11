@@ -14,11 +14,13 @@ app.listen(8000)
 var io = socketio.listen(app)
 
 var users = {};
+var current_color = 'blue'
 
 function create_user() {
+  current_color = current_color == 'blue' ? 'red' : 'blue'
   return { 
     column_center: 5,
-    color: 'blue'
+    color: current_color
   }
 }
 
@@ -39,7 +41,25 @@ io.sockets.on('connection', function(socket) {
       column.push(me.color)
       client.set(column_id, JSON.stringify(column), function(err, resp) {
         console.log("updated column ", column_id, " to ", column)
-        callback(column_id, column)
+
+        // check if a connect-four
+        var column_ids = [ column_id-3, column_id-2, column_id-1, column_id, column_id+1, column_id+2, column_id+3 ]
+
+        get_columns(column_ids, function(columns) {
+          if (connect_four(columns)) { 
+            console.log("CONNECT FOUR!!!")
+            for (var i=0; i<column_ids.length; i++) {
+              client.set(column_ids[i], "[]")
+             
+              io.sockets.emit('column_change', { 
+                column_id: column_ids[i], 
+                column_data: []
+              })
+            }
+          } else {
+            callback(column_id, column)
+          }
+        })
       })
     })
   }
@@ -66,7 +86,7 @@ io.sockets.on('connection', function(socket) {
   }
 
   function notify_players(column_id, column_data) {
-    socket.emit('column_change', {
+    io.sockets.emit('column_change', {
       column_id: column_id,
       column_data: column_data
     })
@@ -79,33 +99,53 @@ io.sockets.on('connection', function(socket) {
     return false
   }
   function check_vertical_for_connect_four(c) {
-    for (var i=3; i<8; i++) 
-      if (c[i-3] == c[i-2] && c[i-2]==c[i-1] && c[i-1] == c[i]) 
-        return true 
-    return false
+    if (c.lengthi == 0) return false
+
+    for (var i=3; ; i++) {
+      if (c[i-3] == c[i-2] && c[i-2]==c[i-1] && c[i-1] == c[i]) {
+        if (typeof c[i] == 'undefined') {
+          return false
+        } else {
+          return true 
+        }
+      }
+    }
   }
   function wins_horizontally(columns) {
-    var horizs = {} // rotate the matrix and test it for verticals again
-    for (var i in columns) {
-      horizs[i] = []
-      for (var j=0; j<8; j++) 
-         horizs[i].push(columns[j][i]) 
+    var ids = []
+    for(var i in columns) { ids.push(i) }
+
+    if (ids.length < 4) return false
+
+    // for each row (increasing infinitely)
+    for (var i=0; ; i++) {
+      // for each column id
+      for (var j=3; j<ids.length; j++) {
+        // get a list of columns you want to check for
+        var a = ids[j-3], b=ids[j-2], c=ids[j-1], d=ids[j]
+        // check if those columns are the same
+        if ( columns[a][i] == columns[b][i] && columns[b][i] == columns[c][i] && columns[c][i] == columns[d][i] ) {
+          // if they are the the same AND undefined, then we have reached a level with no pieces and there has been no match
+          if (typeof columns[a][i] == 'undefined') {
+            return false
+          // otherwise, we have a match and this was a win
+          } else {
+            return true
+          }
+        }
+      }
     }
-    for (var i in horizs) 
-      if (check_vertircal_for_connect_for(columns[i])) 
-        return true 
     return false
+  }
+  function connect_four(columns) {
+    return wins_horizontally(columns) || wins_vertically(columns)
   }
 
 
   // when a client chooses a column to drop their piece into
   socket.on('choose_column', function(column_id) {
     add_to_column(column_id, me.color, notify_players)
-    // check if a connect-four
-    var column_ids = [ column_id-3, column_id-2, column_id-1, column_id, column_id+1, column_id+2, column_id+3 ]
-    get_columns(column_ids, function(columns) {
-        
-    })
+    
       
   })
 
