@@ -57,7 +57,7 @@ io.sockets.on('connection', function(socket) {
             console.log("CONNECT FOUR!!!")
 
             var points_lost = 0
-            for (var i in columns) for (var j=0; j<columns[i].length; j++) if(columns[i][j] == me.color) points_lost++
+            //for (var i in columns) for (var j=0; j<columns[i].length; j++) if(columns[i][j] == me.color) points_lost++
 
             for (var i=0; i<column_ids.length; i++) {
               client.set(column_ids[i], "[]")
@@ -67,16 +67,18 @@ io.sockets.on('connection', function(socket) {
                 column_data: []
               })
 
-              me.score -= points_lost
-              io.sockets.emit('points_change', {
-                player_id: my_id,
-                points: me.points
-              })
             }
+
+            me.points -= 3 //points_lost
           } else {
-            me.score++
+            me.points++
             callback(column_id, column)
           }
+
+          io.sockets.emit('points_change', {
+            player_id: my_id,
+            player_data: me
+          })
         })
       })
     })

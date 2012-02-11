@@ -44,7 +44,8 @@
       }
 
       function player_html(player_id, player) {
-        return"<div id='player_" + player_id + "' class='" + player.color + "_player_score'><span class='player_id'>" + player_id.slice(player_id.length-5, player_id.length) + "</span>: <span class='points' id='score_" + player_id + "'>" + player.points + "</span></div>"
+        var html = "<span class='player_id'>" + player_id.slice(player_id.length-5, player_id.length) + "</span><span class='points' id='score_" + player_id + "'>" + player.points + "</span>"
+        return html
       }
       function players_html(players) {
         var html = ''
@@ -52,16 +53,18 @@
         return html
       }
       function draw_player(player_id, player) {
-        $('#player_' + player_id).html(player_html(player))
+        $('#player_' + player_id).html(player_html(player_id, player))
+        console.log(player_id, player)
       }
       function draw_players(players) {
-        $('#score_box').html(players_html(players))
+        for(var i in players) add_player(i, players[i])
       }
       function add_player(player_id, player) {
-        $('#score_box').append(player_html(player_id, player))
+        var html = "<div id='player_" + player_id + "' class='" + player.color + "_player_score'>" + player_html(player_id, player) + "</div>"
+        $('#score_box').append(html)
       }
       function delete_player(player_id) {
-        players.delete(player_id)
+        delete players[player_id]
         $('#score_box #player_'+player_id).remove()
       }
 
@@ -101,15 +104,16 @@
           })
           
           socket.on('points_change', function(data) {
-            draw_player(data.player_id, data.points)
+            draw_player(data.player_id, data.player_data)
           })
 
           socket.on('add_player', function(data) {
-            add_player(data.player_id)
-            add_player(data.player_data)
+            if (! (data.player_id in players) )
+              add_player(data.player_id, data.player_data)
           })
 
           socket.on('player_exit', function(player_id) {
+            console.log(player_id)
             delete_player(player_id)
           })
         })
