@@ -43,14 +43,32 @@
         $('#game').html(columns_html(columns))
       }
 
-      function user_html(user_id, user) {
-        return"<div id='user_" + user_id + "' class='" + user.color + "_player_score'><span class='user_id'>" + user_id + "</span>: " + user.points + "</div>"
+      function player_html(player_id, player) {
+        return"<div id='player_" + player_id + "' class='" + player.color + "_player_score'><span class='player_id'>" + player_id.slice(player_id.length-5, player_id.length) + "</span>: <span class='points' id='score_" + player_id + "'>" + player.points + "</span></div>"
+      }
+      function players_html(players) {
+        var html = ''
+        for (var i in players) html += player_html(i, players[i])
+        return html
+      }
+      function draw_player(player_id, player) {
+        $('#player_' + player_id).html(player_html(player))
+      }
+      function draw_players(players) {
+        $('#score_box').html(players_html(players))
+      }
+      function add_player(player_id, player) {
+        $('#score_box').append(player_html(player_id, player))
+      }
+      function delete_player(player_id) {
+        players.delete(player_id)
+        $('#score_box #player_'+player_id).remove()
       }
 
       /**
        * Initialize
        */
-      var board, my_id, me, users
+      var board, my_id, me, players
       var columns = {}
       window.addEventListener('load', function() {
         var socket = new io.connect()
@@ -58,12 +76,15 @@
         socket.on('disconnect', function(){ })
 
         socket.on('init_data', function(init_data) {
-          // set user params
+          // set player params
           my_id = init_data.my_id
-          me = init_data.user
-          users = init_data.users
+          me = init_data.player
+          players = init_data.players
 
-          // get the user an initial set of columns
+          draw_players(players)
+          $('#score_box #player_'+my_id).css('border', '1px solid black')
+
+          // get the player an initial set of columns
           socket.on('get_columns', function(data) {
             for ( var i in data ) columns[i] = data[i]
             draw_columns(columns)
@@ -79,7 +100,18 @@
             draw_column(data.column_id, data.column_data)
           })
           
-          socket.on('points')
+          socket.on('points_change', function(data) {
+            draw_player(data.player_id, data.points)
+          })
+
+          socket.on('add_player', function(data) {
+            add_player(data.player_id)
+            add_player(data.player_data)
+          })
+
+          socket.on('player_exit', function(player_id) {
+            delete_player(player_id)
+          })
         })
 
       })
@@ -87,25 +119,27 @@
 <style type="text/css">
   #game { width: 68000px; border: 1px solid black; }
   .slot { width: 65px; height: 65px; border: 1px solid black; float: left; text-align:center; line-height:65px; font-size:18px; font-weight:bold; }
-  .column { float: left; height: 540px; width: 68px; margin-bottom: 100px;}
+  .column { float: left; height: 540px; width: 68px;}
   .column:hover { background: #eee; }
-  .taken {}
+  .taken {  }
   .red { box-shadow: inset 0 0 10px #f00; background-color: #faa; }
   .blue { box-shadow: inset 0 0 10px #00f; background-color: #aaf; }
-  .red_player_score { background-color: #fdd; border-color: #ddd; width: 100px; float: left; }
-  .red_player_score { background-color: #ddf; border-color: #ddd; width: 100px; float: left; }
-  .red_player_score .user_id { color:gray; }
+  .red_player_score { background-color: #fdd; border-color: #ddd; width: 100px; float: left; margin: 5px; text-align:center;}
+  .blue_player_score { background-color: #ddf; border-color: #ddd; width: 100px; float: left; margin: 5px; text-align:center;}
+  .red_player_score .player_id { color:gray; font-size: 32px;}
+  .blue_player_score .player_id { color:gray; font-size: 32px;}
+  #score_box .points { font-size:34px; }
   #game {  }
 
 
 .slot {
 -webkit-touch-callout: none;
--webkit-user-select: none;
--khtml-user-select: none;
--moz-user-select: none;
--ms-user-select: none;
--o-user-select: none;
-user-select: none;
+-webkit-player-select: none;
+-khtml-player-select: none;
+-moz-player-select: none;
+-ms-player-select: none;
+-o-player-select: none;
+player-select: none;
 }
 </style>
 </head>

@@ -13,15 +13,15 @@ app.use(express.static(__dirname + '/public'))
 app.listen(8000)
 var io = socketio.listen(app)
 
-var users = {};
+var players = {};
 var current_color = 'blue'
 
-function create_user() {
+function create_player() {
   current_color = current_color == 'blue' ? 'red' : 'blue'
   return { 
     column_center: 5,
     color: current_color,
-    score: 0
+    points: 0
   }
 }
 
@@ -29,15 +29,17 @@ function create_user() {
 
 
 io.sockets.on('connection', function(socket) {
-  users[socket.id] = create_user()
-  var me = users[socket.id]
+  players[socket.id] = create_player()
+  var me = players[socket.id]
   var my_id = socket.id
-  
+
   socket.emit('init_data', { 
       my_id: socket.id,
-      user: me,
-      users: users
+      player: me,
+      players: players
   })
+
+  io.sockets.emit('add_player', { player_id: my_id, player_data: me })
 
   function add_to_column(column_id, color, callback) {
     get_column(column_id, function(column) {
@@ -177,7 +179,8 @@ io.sockets.on('connection', function(socket) {
   })
 
   socket.on('disconnect', function(){
-    delete users[socket.id] // remove the user from the list
+    delete players[socket.id] // remove the player from the list
+    io.sockets.emit('player_exit', socket.id)
   })
 })
 
@@ -206,7 +209,7 @@ setInterval(function() {
   /**
    * Move elements based on keystrokes
    */
-  _.each(users, function(user) {
+  _.each(players, function(player) {
     
   })
 
