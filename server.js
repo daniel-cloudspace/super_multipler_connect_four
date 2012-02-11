@@ -31,7 +31,8 @@ function create_user() {
 io.sockets.on('connection', function(socket) {
   users[socket.id] = create_user()
   var me = users[socket.id]
-
+  var my_id = socket.id
+  
   socket.emit('init_data', { 
       my_id: socket.id,
       user: me,
